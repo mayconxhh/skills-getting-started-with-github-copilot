@@ -20,14 +20,44 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const spotsLeft = details.max_participants - details.participants.length;
 
+        // Build activity card with an empty participants container we'll populate below
         activityCard.innerHTML = `
           <h4>${name}</h4>
           <p>${details.description}</p>
           <p><strong>Schedule:</strong> ${details.schedule}</p>
           <p><strong>Availability:</strong> ${spotsLeft} spots left</p>
+          <div class="participants">
+            <h5>Participants</h5>
+            ${details.participants && details.participants.length ? '<ul class="participants-list"></ul>' : '<p class="participants-empty"><em>No participants yet</em></p>'}
+          </div>
         `;
 
+        // mark which activity this card represents for unregistering
+        activityCard.dataset.activity = name;
+
         activitiesList.appendChild(activityCard);
+
+        // If participants exist, populate the list with delete buttons
+        if (details.participants && details.participants.length) {
+          const ul = activityCard.querySelector('.participants-list');
+          details.participants.forEach((p) => {
+            const li = document.createElement('li');
+            li.className = 'participant-item';
+
+            const span = document.createElement('span');
+            span.textContent = p;
+
+            const btn = document.createElement('button');
+            btn.className = 'delete-btn';
+            btn.setAttribute('aria-label', `Unregister ${p}`);
+            btn.dataset.email = p;
+            btn.textContent = '✕';
+
+            li.appendChild(span);
+            li.appendChild(btn);
+            ul.appendChild(li);
+          });
+        }
 
         // Add option to select dropdown
         const option = document.createElement("option");
@@ -60,11 +90,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
       if (response.ok) {
         messageDiv.textContent = result.message;
-        messageDiv.className = "success";
+        messageDiv.className = "message success";
         signupForm.reset();
+        // Refresh activities so the newly registered participant appears immediately
+        fetchActivities();
       } else {
         messageDiv.textContent = result.detail || "An error occurred";
-        messageDiv.className = "error";
+        messageDiv.className = "message error";
       }
 
       messageDiv.classList.remove("hidden");
@@ -75,9 +107,44 @@ document.addEventListener("DOMContentLoaded", () => {
       }, 5000);
     } catch (error) {
       messageDiv.textContent = "Failed to sign up. Please try again.";
-      messageDiv.className = "error";
+      messageDiv.className = "message error";
       messageDiv.classList.remove("hidden");
       console.error("Error signing up:", error);
+    }
+  });
+
+  // Event delegation: handle unregister clicks on dynamically created buttons
+  activitiesList.addEventListener('click', async (e) => {
+    if (!e.target.matches('.delete-btn')) return;
+
+    const email = e.target.dataset.email;
+    const card = e.target.closest('.activity-card');
+    const activity = card ? card.dataset.activity : null;
+
+    if (!activity || !email) return;
+
+    try {
+      const resp = await fetch(`/activities/${encodeURIComponent(activity)}/unregister?email=${encodeURIComponent(email)}`, {
+        method: 'POST'
+      });
+      const result = await resp.json();
+
+      if (resp.ok) {
+        messageDiv.textContent = result.message;
+        messageDiv.className = 'message success';
+        // refresh activities to reflect change
+        fetchActivities();
+      } else {
+        messageDiv.textContent = result.detail || 'Error unregistering participant';
+        messageDiv.className = 'message error';
+      }
+      messageDiv.classList.remove('hidden');
+      setTimeout(() => messageDiv.classList.add('hidden'), 5000);
+    } catch (err) {
+      messageDiv.textContent = 'Failed to unregister. Please try again.';
+      messageDiv.className = 'message error';
+      messageDiv.classList.remove('hidden');
+      console.error('Error unregistering:', err);
     }
   });
 
