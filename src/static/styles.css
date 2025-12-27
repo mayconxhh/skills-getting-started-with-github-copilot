@@ -88,8 +88,8 @@ section h3 {
 }
 
 .participants-list {
-  list-style: disc;
-  margin-left: 18px;
+  list-style: none;
+  margin-left: 0;
   padding-left: 0;
   max-height: 120px;
   overflow-y: auto;
@@ -103,6 +103,23 @@ section h3 {
   font-size: 14px;
   color: #0b3a66;
   border: 1px solid rgba(10, 47, 86, 0.06);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.delete-btn {
+  background: transparent;
+  border: none;
+  color: #c62828;
+  font-size: 16px;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 4px;
+}
+
+.delete-btn:hover {
+  background: rgba(198, 40, 40, 0.08);
 }
 
 .participants-empty {
